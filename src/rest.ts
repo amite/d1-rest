@@ -12,7 +12,7 @@ function sanitizeIdentifier(identifier: string): string {
  * Processing when the table name is a keyword in SQLite.
  */
 function sanitizeKeyword(identifier: string): string {
-    return '`'+sanitizeIdentifier(identifier)+'`';
+    return '`' + sanitizeIdentifier(identifier) + '`';
 }
 
 /**
@@ -21,7 +21,7 @@ function sanitizeKeyword(identifier: string): string {
 async function handleGet(c: Context<{ Bindings: Env }>, tableName: string, id?: string): Promise<Response> {
     const table = sanitizeKeyword(tableName);
     const searchParams = new URL(c.req.url).searchParams;
-    
+
     try {
         let query = `SELECT * FROM ${table}`;
         const params: any[] = [];
@@ -36,9 +36,20 @@ async function handleGet(c: Context<{ Bindings: Env }>, tableName: string, id?: 
         // Handle search parameters (basic filtering)
         for (const [key, value] of searchParams.entries()) {
             if (['sort_by', 'order', 'limit', 'offset'].includes(key)) continue;
-            
-            const sanitizedKey = sanitizeIdentifier(key);
-            conditions.push(`${sanitizedKey} = ?`);
+
+            let operator = '=';
+            let fieldName = key;
+
+            if (key.endsWith('_gt')) {
+                operator = '>';
+                fieldName = key.slice(0, -3);
+            } else if (key.endsWith('_lt')) {
+                operator = '<';
+                fieldName = key.slice(0, -3);
+            }
+
+            const sanitizedKey = sanitizeIdentifier(fieldName);
+            conditions.push(`${sanitizedKey} ${operator} ?`);
             params.push(value);
         }
 
@@ -158,14 +169,14 @@ async function handleDelete(c: Context<{ Bindings: Env }>, tableName: string, id
 export async function handleRest(c: Context<{ Bindings: Env }>): Promise<Response> {
     const url = new URL(c.req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
-    
+
     if (pathParts.length < 2) {
         return c.json({ error: 'Invalid path. Expected format: /rest/{tableName}/{id?}' }, 400);
     }
 
     const tableName = pathParts[1];
     const id = pathParts[2];
-    
+
     switch (c.req.method) {
         case 'GET':
             return handleGet(c, tableName, id);

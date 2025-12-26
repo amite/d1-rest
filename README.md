@@ -43,6 +43,7 @@ GET /rest/{table}
 # With filtering
 GET /rest/{table}?column_name=value
 GET /rest/{table}?age=25&status=active
+GET /rest/{table}?age_gt=18&salary_lt=50000
 
 # With sorting
 GET /rest/{table}?sort_by=column_name&order=asc
@@ -52,7 +53,7 @@ GET /rest/{table}?sort_by=name&order=desc
 GET /rest/{table}?limit=10&offset=20
 
 # Combined example
-GET /rest/{table}?age=25&sort_by=name&order=desc&limit=10&offset=20
+GET /rest/{table}?age_gt=18&salary_lt=50000&sort_by=name&order=desc&limit=10&offset=20
 ```
 
 ### Get Single Record
@@ -131,6 +132,8 @@ Content-Type: application/json
 | `limit` | Maximum number of records to return | `limit=10` |
 | `offset` | Number of records to skip | `offset=20` |
 | Any column name | Filter by column value | `age=25` |
+| `column_gt` | Filter where column is greater than value | `age_gt=25` |
+| `column_lt` | Filter where column is less than value | `age_lt=30` |
 
 ## Response Format
 

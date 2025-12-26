@@ -5,6 +5,7 @@ import { handleRest } from './rest';
 export interface Env {
     DB: D1Database;
     SECRET: SecretsStoreSecret;
+    LOCAL_SECRET?: string;
 }
 
 // # List all users
@@ -12,6 +13,9 @@ export interface Env {
 
 // # Get filtered and sorted users
 // GET /rest/users?age=25&sort_by=name&order=desc
+
+// # Get users with comparison filters
+// GET /rest/users?age_gt=18&salary_lt=50000
 
 // # Get paginated results
 // GET /rest/users?limit=10&offset=20
@@ -36,9 +40,6 @@ export default {
             return cors()(c, next);
         })
 
-        // Secret Store key value that we have set
-        const secret = await env.SECRET.get();
-
         // Authentication middleware that verifies the Authorization header
         // is sent in on each request and matches the value of our Secret key.
         // If a match is not found we return a 401 and prevent further access.
@@ -51,6 +52,17 @@ export default {
             const token = authHeader.startsWith('Bearer ')
                 ? authHeader.substring(7)
                 : authHeader;
+
+            // Get the secret - try local dev variable first, then secrets store
+            let secret = c.env.LOCAL_SECRET;
+            if (!secret) {
+                try {
+                    secret = await c.env.SECRET.get();
+                } catch (error) {
+                    console.error('Failed to get secret from secrets store:', error);
+                    return c.json({ error: 'Server configuration error' }, 500);
+                }
+            }
 
             if (token !== secret) {
                 return c.json({ error: 'Unauthorized' }, 401);
